@@ -6,7 +6,6 @@
 //! The main driver is created using [`Ssd1306::new`] which accepts an interface instance, display
 //! size, rotation and mode. The following display modes are supported:
 //!
-//! - [`BasicMode`](crate::mode::BasicMode) - A simple mode with lower level methods available.
 //! - [`BufferedGraphicsMode`] - A framebuffered mode with additional methods and integration with
 //!   [embedded-graphics](https://docs.rs/embedded-graphics).
 //! - [`TerminalMode`] - A bufferless mode supporting drawing text to the display, as well as
@@ -125,6 +124,7 @@ use crate::mode::BasicMode;
 use brightness::Brightness;
 use command::{AddrMode, Command, VcomhLevel};
 use core::convert::Infallible;
+pub use display_interface::AsyncWriteOnlyDataCommand;
 use display_interface::{DataFormat::U8, DisplayError, WriteOnlyDataCommand};
 use embedded_hal::{delay::DelayNs, digital::OutputPin};
 use error::Error;
@@ -445,7 +445,7 @@ where
 
 impl<DI, SIZE> Ssd1306<DI, SIZE, BufferedGraphicsMode<SIZE>>
 where
-    DI: display_interface::AsyncWriteOnlyDataCommand,
+    DI: AsyncWriteOnlyDataCommand,
     SIZE: DisplaySize,
 {
     async fn send_commands_async(&mut self, commands: &[Command]) -> Result<(), DisplayError> {
@@ -559,6 +559,11 @@ where
     pub async fn set_row_async(&mut self, row: u8) -> Result<(), DisplayError> {
         self.send_commands_async(&[Command::PageStart(row.into())])
             .await
+    }
+
+    /// Set the screen pixel on/off inversion
+    pub async fn set_invert_async(&mut self, invert: bool) -> Result<(), DisplayError> {
+        self.send_commands_async(&[Command::Invert(invert)]).await
     }
 
     async fn flush_buffer_chunks_async(
